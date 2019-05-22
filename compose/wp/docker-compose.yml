@@ -1,0 +1,72 @@
+version: '2.4'
+
+networks:
+  lan1: 
+    driver: bridge
+    ipam:
+      config:
+        - subnet: "192.168.254.8/29"
+
+volumes:
+  dbdata: {}
+  wpdata: {}
+
+services:
+  db:
+    image: mysql:5.7
+    # concataner the defautl cmd (mysqld) and our command **need a space before  --character-set-server=utf8mb4**
+    # command: |-
+    #  --character-set-server=utf8mb4
+    #  --collation-server=utf8mb4_unicode_ci
+    command: 
+     - mysqld 
+     - --character-set-server=utf8mb4
+     - --collation-server=utf8mb4_unicode_ci
+
+    networks: 
+      - lan1
+    mem_limit: 1G
+    volumes: 
+      - dbdata:/var/lib/mysql:rw 
+      # - has a space after, can't have space between dbdata:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: wp01
+      MYSQL_USER: wp01
+      MYSQL_PASSWORD: passwp01
+
+      # - MYSQL_ROOT_PASSWORD=secret
+      # - MYSQL_DATABASE=wp01
+      # - MYSQL_USER=wp01
+      # - MYSQL_PASSWORD=passwp01
+
+      # or in a .env file 
+
+  pma:
+    image: phpmyadmin/phpmyadmin
+    networks:
+      - lan1
+    ports: 
+      - 8080:80
+    # expose:
+    #   - 80
+    # not neccessary
+    environment:
+      PMA_HOST: db
+
+  wp:
+    image: wordpress
+    ports:
+      - 80:80
+    volumes:
+      - wpdata:/var/www/html:rw
+    hostname: wp.local
+    networks:
+        - lan1
+    # expose:
+    #   - 80
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_NAME: wp01
+      WORDPRESS_DB_USER: wp01
+      WORDPRESS_DB_PASSWORD: passwp01
